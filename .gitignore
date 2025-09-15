@@ -1,0 +1,49 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Composer
+/vendor/
+composer.lock
+
+# Storage directories
+/storage/users/*
+/storage/pets/*
+/storage/records/*
+/storage/logs/*
+!/storage/users/.gitkeep
+!/storage/pets/.gitkeep
+!/storage/records/.gitkeep
+!/storage/logs/.gitkeep
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# PHPUnit
+.phpunit.result.cache
+/tests/coverage/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Node modules (if using frontend build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

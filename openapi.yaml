@@ -1,0 +1,667 @@
+openapi: 3.0.3
+info:
+  title: BonVet API
+  description: API REST para gestión veterinaria de mascotas
+  version: 1.0.0
+  contact:
+    name: BonVet Support
+    email: support@bonvet.com
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Registrar nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - first_name
+                - last_name
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+                first_name:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                last_name:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                phone:
+                  type: string
+                  maxLength: 20
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Error en los datos proporcionados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Inicio de sesión exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Obtener perfil del usuario autenticado
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/User'
+
+  /auth/me/avatar:
+    patch:
+      tags:
+        - Authentication
+      summary: Subir avatar del usuario
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Avatar actualizado exitosamente
+
+  /pets:
+    get:
+      tags:
+        - Pets
+      summary: Listar mascotas del usuario
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de mascotas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pet'
+
+    post:
+      tags:
+        - Pets
+      summary: Crear nueva mascota
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - species
+                - gender
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                species:
+                  type: string
+                  enum: [dog, cat, bird, rabbit, hamster, fish, reptile, other]
+                breed:
+                  type: string
+                  maxLength: 100
+                gender:
+                  type: string
+                  enum: [male, female]
+                birth_date:
+                  type: string
+                  format: date
+                weight:
+                  type: number
+                  format: float
+                color:
+                  type: string
+                  maxLength: 50
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Mascota creada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Pet'
+
+  /pets/{id}:
+    get:
+      tags:
+        - Pets
+      summary: Obtener mascota por ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalles de la mascota
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Pet'
+
+    patch:
+      tags:
+        - Pets
+      summary: Actualizar mascota
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PetUpdate'
+      responses:
+        '200':
+          description: Mascota actualizada exitosamente
+
+    delete:
+      tags:
+        - Pets
+      summary: Eliminar mascota (soft delete)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Mascota eliminada exitosamente
+
+  /pets/{id}/photo:
+    patch:
+      tags:
+        - Pets
+      summary: Subir foto de la mascota
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Foto actualizada exitosamente
+
+  /pets/{petId}/records:
+    get:
+      tags:
+        - Medical Records
+      summary: Listar registros médicos de una mascota
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de registros médicos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MedicalRecord'
+
+    post:
+      tags:
+        - Medical Records
+      summary: Crear nuevo registro médico
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - title
+                - record_date
+              properties:
+                type:
+                  type: string
+                  enum: [vaccination, checkup, surgery, medication, emergency, diagnostic, treatment, other]
+                title:
+                  type: string
+                  maxLength: 200
+                description:
+                  type: string
+                record_date:
+                  type: string
+                  format: date
+                veterinary_clinic:
+                  type: string
+                  maxLength: 200
+                veterinarian_name:
+                  type: string
+                  maxLength: 200
+                weight_at_visit:
+                  type: number
+                  format: float
+                notes:
+                  type: string
+                metadata:
+                  type: object
+      responses:
+        '201':
+          description: Registro médico creado exitosamente
+
+  /pets/{petId}/qr:
+    post:
+      tags:
+        - QR Access
+      summary: Generar código QR para acceso temporal
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Código QR generado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/QrResponse'
+
+  /qr/access/{token}/records:
+    get:
+      tags:
+        - QR Access
+      summary: Acceder a registros médicos mediante token QR (sin autenticación)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Acceso concedido a registros médicos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/PublicAccessData'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        avatar_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Pet:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        name:
+          type: string
+        species:
+          type: string
+        breed:
+          type: string
+        gender:
+          type: string
+        birth_date:
+          type: string
+          format: date
+        age:
+          type: string
+        weight:
+          type: number
+          format: float
+        color:
+          type: string
+        description:
+          type: string
+        photo_url:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PetUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        species:
+          type: string
+        breed:
+          type: string
+        gender:
+          type: string
+        birth_date:
+          type: string
+          format: date
+        weight:
+          type: number
+          format: float
+        color:
+          type: string
+        description:
+          type: string
+
+    MedicalRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        pet_id:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        record_date:
+          type: string
+          format: date
+        veterinary_clinic:
+          type: string
+        veterinarian_name:
+          type: string
+        weight_at_visit:
+          type: number
+          format: float
+        notes:
+          type: string
+        metadata:
+          type: object
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/File'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    File:
+      type: object
+      properties:
+        id:
+          type: integer
+        uuid:
+          type: string
+        original_name:
+          type: string
+        filename:
+          type: string
+        mime_type:
+          type: string
+        size:
+          type: integer
+        human_size:
+          type: string
+        url:
+          type: string
+        is_image:
+          type: boolean
+        is_pdf:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            token:
+              type: string
+
+    QrResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        access_url:
+          type: string
+        qr_code_base64:
+          type: string
+        qr_code_data_uri:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        expires_in_minutes:
+          type: integer
+
+    PublicAccessData:
+      type: object
+      properties:
+        pet:
+          type: object
+          properties:
+            name:
+              type: string
+            species:
+              type: string
+            breed:
+              type: string
+            gender:
+              type: string
+            age:
+              type: string
+        owner:
+          type: object
+          properties:
+            full_name:
+              type: string
+            phone:
+              type: string
+        medical_records:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicalRecord'
+        access_info:
+          type: object
+          properties:
+            expires_at:
+              type: string
+              format: date-time
+            remaining_time:
+              type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        errors:
+          type: object

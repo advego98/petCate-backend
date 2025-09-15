@@ -1,0 +1,13 @@
+# Create the storage directory structure with .gitkeep files
+
+# Create directories and .gitkeep files
+mkdir -p storage/logs
+mkdir -p storage/users  
+mkdir -p storage/pets
+mkdir -p storage/records
+
+# Create .gitkeep files to ensure directories are tracked by git
+touch storage/logs/.gitkeep
+touch storage/users/.gitkeep
+touch storage/pets/.gitkeep  
+touch storage/records/.gitkeep
