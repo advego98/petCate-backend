@@ -7,8 +7,10 @@ use BonVet\Models\QrToken;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelLow;
-use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\Label\Label;
+use Endroid\QrCode\Logo\Logo;
 use Ramsey\Uuid\Uuid;
 
 class QrService
@@ -32,23 +34,28 @@ class QrService
         // Crear nuevo token
         $token = Uuid::uuid4()->toString();
         
+        // Usar DateTime en lugar de now()
+        $expiresAt = new \DateTime();
+        $expiresAt->modify('+' . $this->qrTtl . ' minutes');
+        
         $qrToken = QrToken::create([
             'token' => $token,
             'pet_id' => $pet->id,
-            'expires_at' => now()->addMinutes($this->qrTtl),
+            'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
             'is_active' => true,
             'created_by_ip' => $createdByIp
         ]);
 
-        // Generar QR code
+        // Generar QR code - VERSIÓN CORREGIDA
         $accessUrl = $this->baseUrl . '/qr/access/' . $token;
         
+        // Opción 1: Versión simplificada (RECOMENDADA)
         $qrCode = QrCode::create($accessUrl)
             ->setEncoding(new Encoding('UTF-8'))
-            ->setErrorCorrectionLevel(new ErrorCorrectionLevelLow())
+            ->setErrorCorrectionLevel(ErrorCorrectionLevel::Low)
             ->setSize(300)
             ->setMargin(10)
-            ->setRoundBlockSizeMode(new RoundBlockSizeModeMargin());
+            ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
 
         $writer = new PngWriter();
         $result = $writer->write($qrCode);
@@ -58,7 +65,41 @@ class QrService
             'access_url' => $accessUrl,
             'qr_code_base64' => base64_encode($result->getString()),
             'qr_code_data_uri' => $result->getDataUri(),
-            'expires_at' => $qrToken->expires_at->toISOString(),
+            'expires_at' => $expiresAt->format('c'), // ISO 8601
+            'expires_in_minutes' => $this->qrTtl
+        ];
+    }
+
+    // Versión alternativa con más opciones
+    public function generateAdvancedQr(Pet $pet, string $createdByIp = null): array
+    {
+        // ... mismo código de token ...
+
+        $accessUrl = $this->baseUrl . '/qr/access/' . $token;
+        
+        // QR con más personalización
+        $qrCode = QrCode::create($accessUrl)
+            ->setEncoding(new Encoding('UTF-8'))
+            ->setErrorCorrectionLevel(ErrorCorrectionLevel::Medium)
+            ->setSize(400)
+            ->setMargin(15)
+            ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin)
+            ->setForegroundColor(new \Endroid\QrCode\Color\Color(0, 0, 0))
+            ->setBackgroundColor(new \Endroid\QrCode\Color\Color(255, 255, 255));
+
+        // Opcional: Agregar label
+        $label = Label::create('BonVet - ' . $pet->name)
+            ->setTextColor(new \Endroid\QrCode\Color\Color(0, 0, 0));
+
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode, null, $label);
+
+        return [
+            'token' => $token,
+            'access_url' => $accessUrl,
+            'qr_code_base64' => base64_encode($result->getString()),
+            'qr_code_data_uri' => $result->getDataUri(),
+            'expires_at' => $expiresAt->format('c'),
             'expires_in_minutes' => $this->qrTtl
         ];
     }
@@ -86,6 +127,7 @@ class QrService
 
     public function cleanExpiredTokens(): int
     {
-        return QrToken::where('expires_at', '<', now())->delete();
+        $now = new \DateTime();
+        return QrToken::where('expires_at', '<', $now->format('Y-m-d H:i:s'))->delete();
     }
 }

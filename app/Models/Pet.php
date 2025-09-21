@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use DateTime;
 
 class Pet extends Model
 {
@@ -56,20 +57,21 @@ class Pet extends Model
         if (!$this->birth_date) {
             return null;
         }
+        $now = new DateTime(date('Y-m-d'));
+        $birthDate = new DateTime($this->birth_date);
 
-        $now = now();
-        $birthDate = $this->birth_date;
-        
-        $years = $now->diffInYears($birthDate);
-        $months = $now->diffInMonths($birthDate) % 12;
-        
+        $diff = $now->diff($birthDate);
+
+        $years = $diff->y;
+        $months = $diff->m;
+        $days = $diff->d;
+
         if ($years > 0) {
             return $years . ' año' . ($years > 1 ? 's' : '') . 
-                   ($months > 0 ? ' y ' . $months . ' mes' . ($months > 1 ? 'es' : '') : '');
+                ($months > 0 ? ' y ' . $months . ' mes' . ($months > 1 ? 'es' : '') : '');
         } elseif ($months > 0) {
             return $months . ' mes' . ($months > 1 ? 'es' : '');
         } else {
-            $days = $now->diffInDays($birthDate);
             return $days . ' día' . ($days > 1 ? 's' : '');
         }
     }

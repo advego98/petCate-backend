@@ -4,6 +4,7 @@ namespace BonVet\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use DateTime;
 
 class QrToken extends Model
 {
@@ -41,7 +42,7 @@ class QrToken extends Model
 
     public function markAsUsed(): void
     {
-        $this->update(['last_used_at' => now()]);
+        $this->update(['last_used_at' => new DateTime()]);
     }
 
     public function deactivate(): void
@@ -55,7 +56,7 @@ class QrToken extends Model
             return null;
         }
 
-        $now = now();
+        $now = new DateTime();
         $diff = $now->diff($this->expires_at);
         
         if ($diff->h > 0) {

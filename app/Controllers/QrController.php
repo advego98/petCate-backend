@@ -7,6 +7,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use BonVet\Models\Pet;
 use BonVet\Models\MedicalRecord;
 use BonVet\Services\QrService;
+use DateTime;
 
 class QrController
 {
@@ -118,7 +119,7 @@ class QrController
                     'token' => $token,
                     'expires_at' => $qrToken->expires_at,
                     'remaining_time' => $qrToken->remaining_time,
-                    'accessed_at' => now(),
+                    'accessed_at' => new DateTime(),
                 ]
             ];
 
