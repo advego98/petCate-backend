@@ -63,19 +63,25 @@ return function (App $app) {
         $group->get('', [$petController, 'index']);
         $group->post('', [$petController, 'store'])
             ->add(new ValidationMiddleware([
-                'name' => 'required|min:1|max:100',
-                'species' => 'required|in:dog,cat,bird,rabbit,hamster,fish,reptile,other',
-                'gender' => 'required|in:male,female',
-                'breed' => 'max:100',
-                'birth_date' => 'date',
-                'weight' => 'numeric',
-                'color' => 'max:50'
-            ]));
-        
+            'nombre' => 'required|min:1|max:255',
+            'especie' => 'required|in:perro,gato,ave,conejo,hamster,pez,reptil,otro',
+            'raza' => 'required|min:1|max:255',
+            'fecha_nacimiento' => 'required', // Validación personalizada en controller
+            'genero' => 'required|in:macho,hembra',
+            'peso' => 'required|numeric',
+            'chip' => 'required', // Validación personalizada en controller
+            'observaciones' => 'max:1000' // Opcional
+        ]));
+            
         $group->get('/{id}', [$petController, 'show']);
         $group->patch('/{id}', [$petController, 'update']);
         $group->delete('/{id}', [$petController, 'delete']);
-        $group->patch('/{id}/photo', [$petController, 'uploadPhoto']);
+        $group->patch('/{id}/foto', [$petController, 'uploadPhoto']); // Cambio: photo -> foto
+        
+        // Rutas auxiliares
+        $group->get('/especies/lista', [$petController, 'getEspecies']); // GET /pets/especies/lista
+        $group->post('/chip/validar', [$petController, 'validarChip']); // POST /pets/chip/validar
+        
     })->add(new AuthMiddleware($container));
 
     // Rutas de registros médicos

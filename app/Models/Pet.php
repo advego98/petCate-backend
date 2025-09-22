@@ -13,24 +13,45 @@ class Pet extends Model
     protected $fillable = [
         'user_id',
         'name',
-        'species',
-        'breed',
-        'gender',
-        'birth_date',
-        'weight',
-        'color',
-        'description',
+        'especie',
+        'raza',
+        'fecha_nacimiento',
+        'genero',
+        'peso',
+        'chip',
+        'observaciones',
         'photo_url',
         'is_active'
     ];
 
     protected $casts = [
-        'birth_date' => 'date',
-        'weight' => 'decimal:2',
+        'fecha_nacimiento' => 'date',
+        'peso' => 'decimal:2',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
+
+        // Especies válidas
+    public static function getEspeciesValidas(): array
+    {
+        return [
+            'perro' => 'Perro',
+            'gato' => 'Gato', 
+            'ave' => 'Ave',
+            'conejo' => 'Conejo',
+            'hamster' => 'Hámster',
+            'pez' => 'Pez',
+            'reptil' => 'Reptil',
+            'otro' => 'Otro'
+        ];
+    }
+
+    // Géneros válidos
+    public static function getGenerosValidos(): array
+    {
+        return ['macho', 'hembra'];
+    }
 
     public function user(): BelongsTo
     {
@@ -52,34 +73,66 @@ class Pet extends Model
         return $this->morphMany(File::class, 'fileable');
     }
 
-    public function getAgeAttribute(): ?string
+    // Formatear fecha de nacimiento como dd/mm/yyyy
+    public function getFechaNacimientoFormateadaAttribute(): ?string
     {
-        if (!$this->birth_date) {
+        if (!$this->fecha_nacimiento) {
             return null;
         }
-        $now = new DateTime(date('Y-m-d'));
-        $birthDate = new DateTime($this->birth_date);
+        
+        return $this->fecha_nacimiento->format('d/m/Y');
+    }
 
-        $diff = $now->diff($birthDate);
+    // Validar formato de chip
+    public static function validarChip(string $chip): array
+    {
+        $errores = [];
 
-        $years = $diff->y;
-        $months = $diff->m;
-        $days = $diff->d;
-
-        if ($years > 0) {
-            return $years . ' año' . ($years > 1 ? 's' : '') . 
-                ($months > 0 ? ' y ' . $months . ' mes' . ($months > 1 ? 'es' : '') : '');
-        } elseif ($months > 0) {
-            return $months . ' mes' . ($months > 1 ? 'es' : '');
-        } else {
-            return $days . ' día' . ($days > 1 ? 's' : '');
+        // Verificar longitud
+        if (strlen($chip) !== 15) {
+            $errores[] = 'El chip debe tener exactamente 15 caracteres';
         }
+
+        // Verificar que solo sean números
+        if (!ctype_digit($chip)) {
+            $errores[] = 'El chip debe contener solo números';
+        }
+
+        // Verificar prefijo (primeros 3 dígitos)
+        if (strlen($chip) >= 3) {
+            $prefijo = (int) substr($chip, 0, 3);
+            if ($prefijo < 900 || $prefijo > 985) {
+                $errores[] = 'Los primeros 3 dígitos del chip deben estar entre 900 y 985';
+            }
+        }
+
+        return [
+            'valido' => empty($errores),
+            'errores' => $errores
+        ];
     }
 
     public function toArray(): array
     {
         $array = parent::toArray();
-        $array['age'] = $this->getAgeAttribute();
         return $array;
+    }
+
+        // Scope para buscar por chip
+    public function scopePorChip($query, string $chip)
+    {
+        return $query->where('chip', $chip);
+    }
+
+     // Scope para mascotas activas
+    public function scopeActivas($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    // Scope por especie
+    public function scopePorEspecie($query, string $especie)
+    {
+        return $query->where('especie', $especie);
     }
 }

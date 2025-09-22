@@ -66,16 +66,66 @@ class PetController
         $data = $request->getParsedBody();
 
         try {
+              // Validar campos obligatorios
+            $camposObligatorios = ['nombre', 'especie', 'raza', 'fecha_nacimiento', 'genero', 'peso', 'chip'];
+            foreach ($camposObligatorios as $campo) {
+                if (!isset($data[$campo]) || trim($data[$campo]) === '') {
+                    throw new \Exception("El campo '$campo' es obligatorio");
+                }
+            }
+
+            // Validar especie
+            $especiesValidas = array_keys(Pet::getEspeciesValidas());
+            if (!in_array($data['especie'], $especiesValidas)) {
+                throw new \Exception('Especie no válida. Opciones: ' . implode(', ', $especiesValidas));
+            }
+
+            // Validar género
+            if (!in_array($data['genero'], Pet::getGenerosValidos())) {
+                throw new \Exception('Género no válido. Opciones: macho, hembra');
+            }
+
+            // Validar y convertir fecha de nacimiento
+            $fechaNacimiento = $this->convertirFecha($data['fecha_nacimiento']);
+            if (!$fechaNacimiento) {
+                throw new \Exception('Formato de fecha inválido. Use dd/mm/yyyy');
+            }
+
+            // Verificar que la fecha no sea futura
+            $now = new \DateTime();
+            if ($fechaNacimiento > $now) {
+                throw new \Exception('La fecha de nacimiento no puede ser futura');
+            }
+
+            // Validar peso
+            $peso = (float) $data['peso'];
+            if ($peso <= 0) {
+                throw new \Exception('El peso debe ser mayor a 0');
+            }
+
+            // Validar chip
+            $chip = trim($data['chip']);
+            $validacionChip = Pet::validarChip($chip);
+            if (!$validacionChip['valido']) {
+                throw new \Exception('Chip inválido: ' . implode(', ', $validacionChip['errores']));
+            }
+
+            // Verificar que el chip no esté duplicado
+            if (Pet::where('chip', $chip)->exists()) {
+                throw new \Exception('Ya existe una mascota con este número de chip');
+            }
+
+            // Crear mascota
             $pet = Pet::create([
-                'user_id' => $userId,
-                'name' => $data['name'],
-                'species' => $data['species'],
-                'breed' => $data['breed'] ?? null,
-                'gender' => $data['gender'],
-                'birth_date' => $data['birth_date'] ?? null,
-                'weight' => $data['weight'] ?? null,
-                'color' => $data['color'] ?? null,
-                'description' => $data['description'] ?? null,
+                 'user_id' => $userId,
+                'nombre' => trim($data['nombre']),
+                'especie' => $data['especie'],
+                'raza' => trim($data['raza']),
+                'fecha_nacimiento' => $fechaNacimiento->format('Y-m-d'),
+                'genero' => $data['genero'],
+                'peso' => $peso,
+                'chip' => $chip,
+                'observaciones' => isset($data['observaciones']) ? trim($data['observaciones']) : null,
             ]);
 
             $response->getBody()->write(json_encode([
@@ -113,12 +163,89 @@ class PetController
         }
 
         try {
-            $pet->update($data);
+           $updateData = [];
+
+            // Validar y procesar cada campo
+            if (isset($data['nombre'])) {
+                if (trim($data['nombre']) === '') {
+                    throw new \Exception('El nombre no puede estar vacío');
+                }
+                $updateData['nombre'] = trim($data['nombre']);
+            }
+
+            if (isset($data['especie'])) {
+                $especiesValidas = array_keys(Pet::getEspeciesValidas());
+                if (!in_array($data['especie'], $especiesValidas)) {
+                    throw new \Exception('Especie no válida. Opciones: ' . implode(', ', $especiesValidas));
+                }
+                $updateData['especie'] = $data['especie'];
+            }
+
+            if (isset($data['raza'])) {
+                if (trim($data['raza']) === '') {
+                    throw new \Exception('La raza no puede estar vacía');
+                }
+                $updateData['raza'] = trim($data['raza']);
+            }
+
+            if (isset($data['fecha_nacimiento'])) {
+                $fechaNacimiento = $this->convertirFecha($data['fecha_nacimiento']);
+                if (!$fechaNacimiento) {
+                    throw new \Exception('Formato de fecha inválido. Use dd/mm/yyyy');
+                }
+                
+                $now = new \DateTime();
+                if ($fechaNacimiento > $now) {
+                    throw new \Exception('La fecha de nacimiento no puede ser futura');
+                }
+                
+                $updateData['fecha_nacimiento'] = $fechaNacimiento->format('Y-m-d');
+            }
+
+            if (isset($data['genero'])) {
+                if (!in_array($data['genero'], Pet::getGenerosValidos())) {
+                    throw new \Exception('Género no válido. Opciones: macho, hembra');
+                }
+                $updateData['genero'] = $data['genero'];
+            }
+
+            if (isset($data['peso'])) {
+                $peso = (float) $data['peso'];
+                if ($peso <= 0) {
+                    throw new \Exception('El peso debe ser mayor a 0');
+                }
+                $updateData['peso'] = $peso;
+            }
+
+            if (isset($data['chip'])) {
+                $chip = trim($data['chip']);
+                $validacionChip = Pet::validarChip($chip);
+                if (!$validacionChip['valido']) {
+                    throw new \Exception('Chip inválido: ' . implode(', ', $validacionChip['errores']));
+                }
+
+                // Verificar duplicado solo si es diferente al actual
+                if ($chip !== $pet->chip && Pet::where('chip', $chip)->exists()) {
+                    throw new \Exception('Ya existe una mascota con este número de chip');
+                }
+                
+                $updateData['chip'] = $chip;
+            }
+
+            if (isset($data['observaciones'])) {
+                $updateData['observaciones'] = $data['observaciones'] ? trim($data['observaciones']) : null;
+            }
+
+            // Actualizar solo si hay campos válidos
+            if (!empty($updateData)) {
+                $pet->update($updateData);
+            }
 
             $response->getBody()->write(json_encode([
                 'success' => true,
                 'message' => 'Mascota actualizada exitosamente',
-                'data' => $pet->fresh()->toArray()
+                'data' => $pet->fresh()->toArray(),
+                'updated_fields' => array_keys($updateData)
             ]));
 
             return $response->withHeader('Content-Type', 'application/json');
@@ -204,13 +331,13 @@ class PetController
             $file = $this->fileService->uploadFile($uploadedFiles['photo'], $pet, 'pets');
             
             // Actualizar URL de la foto en la mascota
-            $pet->update(['photo_url' => $file->url]);
+            $pet->update(['foto_url' => $file->url]);
 
             $response->getBody()->write(json_encode([
                 'success' => true,
                 'message' => 'Foto actualizada exitosamente',
                 'data' => [
-                    'photo_url' => $file->url,
+                    'foto_url' => $file->url,
                     'file' => $file->toArray()
                 ]
             ]));
@@ -225,5 +352,54 @@ class PetController
 
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
+    }
+
+    // Método auxiliar para convertir fecha dd/mm/yyyy a DateTime
+    private function convertirFecha(string $fecha): ?\DateTime
+    {
+        try {
+            // Intentar formato dd/mm/yyyy
+            $dateTime = \DateTime::createFromFormat('d/m/Y', $fecha);
+            if ($dateTime && $dateTime->format('d/m/Y') === $fecha) {
+                return $dateTime;
+            }
+
+            // Intentar formato yyyy-mm-dd (por si viene del frontend en este formato)
+            $dateTime = \DateTime::createFromFormat('Y-m-d', $fecha);
+            if ($dateTime && $dateTime->format('Y-m-d') === $fecha) {
+                return $dateTime;
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    // Endpoint para obtener especies válidas
+    public function getEspecies(Request $request, Response $response): Response
+    {
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'data' => Pet::getEspeciesValidas()
+        ]));
+
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    // Endpoint para validar chip
+    public function validarChip(Request $request, Response $response): Response
+    {
+        $data = $request->getParsedBody();
+        $chip = $data['chip'] ?? '';
+
+        $validacion = Pet::validarChip($chip);
+
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'data' => $validacion
+        ]));
+
+        return $response->withHeader('Content-Type', 'application/json');
     }
 }
