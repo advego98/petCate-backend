@@ -19,18 +19,21 @@ class AuthService
 
     public function register(array $data): array
     {
-        // Verificar si el email ya existe
-        if (User::where('email', $data['email'])->exists()) {
-            throw new \Exception('El email ya está registrado');
+        // Verificar si el correo ya existe
+        if (User::where('correo', $data['correo'])->exists()) {
+            throw new \Exception('El correo ya está registrado');
         }
 
         // Crear usuario
         $user = User::create([
-            'email' => $data['email'],
-            'password' => password_hash($data['password'], PASSWORD_DEFAULT),
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'phone' => $data['phone'] ?? null,
+            'nombre' => trim($data['nombre']),
+            'apellidos' => trim($data['apellidos']),
+            'correo' => $data['correo'],
+            'contrasena' => password_hash($data['contrasena'], PASSWORD_DEFAULT),
+            'domicilio' => trim($data['domicilio']),
+            'ciudad' => trim($data['ciudad']),
+            'provincia' => trim($data['provincia']),
+            'cp' => trim($data['cp']),
         ]);
 
         // Generar token
@@ -42,12 +45,12 @@ class AuthService
         ];
     }
 
-    public function login(string $email, string $password): array
+    public function login(string $correo, string $contrasena): array
     {
-        // Buscar usuario por email
-        $user = User::where('email', $email)->first();
+        // Buscar usuario por correo
+        $user = User::where('correo', $correo)->first();
         
-        if (!$user || !password_verify($password, $user->password)) {
+        if (!$user || !password_verify($contrasena, $user->contrasena)) {
             throw new \Exception('Credenciales incorrectas');
         }
 
@@ -64,7 +67,7 @@ class AuthService
     {
         $payload = [
             'user_id' => $user->id,
-            'email' => $user->email,
+            'correo' => $user->correo,
             'iat' => time(),
             'exp' => time() + ($this->jwtTtl * 60)
         ];

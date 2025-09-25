@@ -33,16 +33,19 @@ echo "Running migrations...\n";
 if (!$schema->hasTable('users')) {
     $schema->create('users', function (Blueprint $table) {
         $table->id();
-        $table->string('email')->unique();
-        $table->string('password');
-        $table->string('first_name');
-        $table->string('last_name');
-        $table->string('phone')->nullable();
+        $table->string('correo')->unique();
+        $table->string('contrasena');
+        $table->string('nombre');
+        $table->string('apellidos');
+        $table->string('domicilio');
+        $table->string('ciudad');
+        $table->string('provincia');
+        $table->string('cp');
         $table->string('avatar_url')->nullable();
         $table->timestamp('email_verified_at')->nullable();
         $table->timestamps();
         
-        $table->index(['email']);
+        $table->index(['correo']);
     });
     echo "✓ Users table created\n";
 }
@@ -52,14 +55,14 @@ if (!$schema->hasTable('pets')) {
     $schema->create('pets', function (Blueprint $table) {
         $table->id();
         $table->foreignId('user_id')->constrained()->onDelete('cascade');
-        $table->string('name');
-        $table->string('species'); // dog, cat, bird, etc.
-        $table->string('breed')->nullable();
-        $table->enum('gender', ['male', 'female']);
-        $table->date('birth_date')->nullable();
-        $table->decimal('weight', 5, 2)->nullable(); // kg
-        $table->string('color')->nullable();
-        $table->text('description')->nullable();
+        $table->string('nombre');
+        $table->string('especie'); // dog, cat, bird, etc.
+        $table->string('raza')->nullable();
+        $table->enum('genero', ['male', 'female']);
+        $table->date('fecha_nacimiento')->nullable();
+        $table->decimal('peso', 5, 2)->nullable(); // kg
+        $table->string('chip');
+        $table->text('observaciones')->nullable();
         $table->string('photo_url')->nullable();
         $table->boolean('is_active')->default(true);
         $table->timestamps();

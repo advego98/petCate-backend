@@ -38,17 +38,20 @@ return function (App $app) {
     $app->group('/auth', function (RouteCollectorProxy $group) use ($authController) {
         $group->post('/register', [$authController, 'register'])
             ->add(new ValidationMiddleware([
-                'email' => 'required|email',
-                'password' => 'required|min:6',
-                'first_name' => 'required|min:2|max:50',
-                'last_name' => 'required|min:2|max:50',
-                'phone' => 'max:20'
+                'nombre' => 'required|min:2|max:50',
+                'apellidos' => 'required|min:2|max:50',
+                'correo' => 'required|email',
+                'contrasena' => 'required|min:6',
+                'domicilio' => 'required|min:3|max:255',
+                'ciudad' => 'required|min:3|max:255',
+                'provincia' => 'required|min:3|max:255',
+                'cp' => 'required|min:5|max:10'
             ]));
 
         $group->post('/login', [$authController, 'login'])
             ->add(new ValidationMiddleware([
-                'email' => 'required|email',
-                'password' => 'required'
+                'correo' => 'required|email',
+                'contrasena' => 'required'
             ]));
     });
 

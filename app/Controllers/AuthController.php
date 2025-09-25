@@ -49,7 +49,7 @@ class AuthController
         $data = $request->getParsedBody();
 
         try {
-            $result = $this->authService->login($data['email'], $data['password']);
+            $result = $this->authService->login($data['correo'], $data['contrasena']);
             
             $response->getBody()->write(json_encode([
                 'success' => true,

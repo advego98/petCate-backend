@@ -9,16 +9,18 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class User extends Model
 {
     protected $fillable = [
-        'email',
-        'password',
-        'first_name',
-        'last_name',
-        'phone',
-        'avatar_url'
-    ];
+        'nombre',
+        'apellidos',
+        'correo',
+        'contrasena',
+        'domicilio',
+        'ciudad',
+        'provincia',
+        'cp',
+    ];  
 
     protected $hidden = [
-        'password'
+        'contrasena'
     ];
 
     protected $casts = [
@@ -39,7 +41,7 @@ class User extends Model
 
     public function getFullNameAttribute(): string
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return $this->nombre . ' ' . $this->apellido;
     }
 
     public function toArray(): array
