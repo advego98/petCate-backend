@@ -9,21 +9,21 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class MedicalRecord extends Model
 {
     protected $fillable = [
-        'pet_id',
-        'type',
-        'title',
-        'description',
-        'record_date',
-        'veterinary_clinic',
-        'veterinarian_name',
-        'weight_at_visit',
-        'notes',
-        'metadata'
+        'mascota_id',
+        'tipo',
+        'titulo',
+        'descripción',
+        'fecha',
+        'clinica',
+        'nombre',
+        'peso_visita',
+        'notas',
+        'metadata '
     ];
 
     protected $casts = [
-        'record_date' => 'date',
-        'weight_at_visit' => 'decimal:2',
+        'fecha' => 'date',
+        'peso_visita' => 'decimal:2',
         'metadata' => 'json',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
