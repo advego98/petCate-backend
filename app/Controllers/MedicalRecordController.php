@@ -7,6 +7,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use BonVet\Models\Pet;
 use BonVet\Models\MedicalRecord;
 use BonVet\Services\FileService;
+use DateTime;
 
 class MedicalRecordController
 {
@@ -33,7 +34,7 @@ class MedicalRecordController
             return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         }
 
-        $records = MedicalRecord::where('pet_id', $petId)
+        $records = MedicalRecord::where('mascota_id', $petId)
             ->with(['files'])
             ->orderBy('record_date', 'desc')
             ->get();
@@ -64,7 +65,7 @@ class MedicalRecordController
         }
 
         $record = MedicalRecord::where('id', $recordId)
-            ->where('pet_id', $petId)
+            ->where('mascota_id', $petId)
             ->with(['files', 'pet'])
             ->first();
 
@@ -87,6 +88,7 @@ class MedicalRecordController
     public function store(Request $request, Response $response, array $args): Response
     {
         $userId = $request->getAttribute('user_id');
+        $user = $request->getAttribute('user');
         $petId = $args['petId'];
         $data = $request->getParsedBody();
 
@@ -103,15 +105,15 @@ class MedicalRecordController
 
         try {
             $record = MedicalRecord::create([
-                'pet_id' => $petId,
-                'type' => $data['type'],
-                'title' => $data['title'],
-                'description' => $data['description'] ?? null,
-                'record_date' => $data['record_date'],
-                'veterinary_clinic' => $data['veterinary_clinic'] ?? null,
-                'veterinarian_name' => $data['veterinarian_name'] ?? null,
-                'weight_at_visit' => $data['weight_at_visit'] ?? null,
-                'notes' => $data['notes'] ?? null,
+                'mascota_id' => $petId,
+                'tipo' => $data['tipo'],
+                'titulo' => $data['titulo'],
+                'descripcion' => $data['descripcion'] ?? null,
+                'fecha_registro' => new DateTime(),
+                'clinica' => $data['clinica'] ?? null,
+                'nombre' => $user->nombre,
+                'peso_visita' => $data['peso_visita'] ?? null,
+                'notas' => $data['notas'] ?? null,
                 'metadata' => $data['metadata'] ?? null,
             ]);
 
@@ -151,7 +153,7 @@ class MedicalRecordController
             return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         }
 
-        $record = MedicalRecord::where('id', $recordId)->where('pet_id', $petId)->first();
+        $record = MedicalRecord::where('id', $recordId)->where('mascota_id', $petId)->first();
 
         if (!$record) {
             $response->getBody()->write(json_encode([
@@ -199,7 +201,7 @@ class MedicalRecordController
             return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         }
 
-        $record = MedicalRecord::where('id', $recordId)->where('pet_id', $petId)->first();
+        $record = MedicalRecord::where('id', $recordId)->where('mascota_id', $petId)->first();
 
         if (!$record) {
             $response->getBody()->write(json_encode([
@@ -254,7 +256,7 @@ class MedicalRecordController
             return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         }
 
-        $record = MedicalRecord::where('id', $recordId)->where('pet_id', $petId)->first();
+        $record = MedicalRecord::where('id', $recordId)->where('mascota_id', $petId)->first();
 
         if (!$record) {
             $response->getBody()->write(json_encode([
