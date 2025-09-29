@@ -79,7 +79,7 @@ return function (App $app) {
         $group->get('/{id}', [$petController, 'show']);
         $group->patch('/{id}', [$petController, 'update']);
         $group->delete('/{id}', [$petController, 'delete']);
-        $group->patch('/{id}/foto', [$petController, 'uploadPhoto']); // Cambio: photo -> foto
+        $group->post('/{id}/foto', [$petController, 'uploadPhoto']); // Cambio: photo -> foto
         
         // Rutas auxiliares
         $group->get('/especies/lista', [$petController, 'getEspecies']); // GET /pets/especies/lista

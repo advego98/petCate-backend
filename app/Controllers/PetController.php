@@ -312,7 +312,7 @@ class PetController
             return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         }
 
-        if (!isset($uploadedFiles['photo'])) {
+        if (!isset($uploadedFiles['foto'])) {
             $response->getBody()->write(json_encode([
                 'success' => false,
                 'error' => 'No se proporcionó archivo de foto'
@@ -328,10 +328,11 @@ class PetController
             }
 
             // Subir nueva foto
-            $file = $this->fileService->uploadFile($uploadedFiles['photo'], $pet, 'pets');
+            $file = $this->fileService->uploadFile($uploadedFiles['foto'], $pet, 'pets');
             
             // Actualizar URL de la foto en la mascota
-            $pet->update(['foto_url' => $file->url]);
+            $pet->foto_url = $file->url;
+            $pet->save();
 
             $response->getBody()->write(json_encode([
                 'success' => true,
