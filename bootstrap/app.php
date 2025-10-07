@@ -12,6 +12,14 @@ use BonVet\Services\AuthService;
 use BonVet\Services\FileService;
 use BonVet\Services\QrService;
 
+$basePath = defined('BASE_PATH') ? BASE_PATH : __DIR__ . '/..';
+$baseUrl = defined('BASE_URL') ? BASE_URL : '';
+
+// Actualizar todas las rutas que usen __DIR__ por $basePath:
+
+
+
+
 require __DIR__ . '/../vendor/autoload.php';
 
 // Load environment variables
@@ -24,8 +32,9 @@ $containerBuilder = new ContainerBuilder();
 // Add DI definitions
 $containerBuilder->addDefinitions([
     'logger' => function () {
+        Global $basePath;
         $logger = new Logger('bonvet');
-        $logPath = __DIR__ . '/../storage/logs/app.log';
+        $logPath = $basePath . '/storage/logs/app.log';
         $logDir = dirname($logPath);
         
         if (!is_dir($logDir)) {
@@ -43,7 +52,7 @@ $containerBuilder->addDefinitions([
     'upload_config' => [
         'max_size' => (int) ($_ENV['UPLOAD_MAX_SIZE_MB'] ?? 10) * 1024 * 1024,
         'allowed_mime' => explode(',', $_ENV['UPLOAD_ALLOWED_MIME'] ?? 'image/jpeg,image/png,image/webp,application/pdf'),
-        'storage_path' => __DIR__ . '/../storage',
+        'storage_path' => $basePath . '/storage',
     ],
 
     // Services
