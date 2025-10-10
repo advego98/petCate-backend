@@ -9,25 +9,25 @@ class File extends Model
 {
     protected $fillable = [
         'uuid',
-        'fileable_type',
-        'fileable_id',
-        'original_name',
-        'filename',
-        'mime_type',
-        'size',
-        'path',
-        'disk'
+        'tipo_archivo',      // antes: fileable_type
+        'id_archivo',        // antes: fileable_id
+        'nombre_original',   // antes: original_name
+        'nombre_archivo',    // antes: filename
+        'tipo_mime',         // antes: mime_type
+        'tamaño',            // antes: size
+        'ruta',              // antes: path
+        'disco'              // antes: disk
     ];
 
     protected $casts = [
-        'size' => 'integer',
+        'tamaño' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
 
     public function fileable(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo('fileable', 'tipo_archivo', 'id_archivo');
     }
 
     public function getUrlAttribute(): string
@@ -35,9 +35,9 @@ class File extends Model
         return '/api/files/' . $this->uuid;
     }
 
-    public function getHumanSizeAttribute(): string
+    public function getTamanoLegibleAttribute(): string
     {
-        $bytes = $this->size;
+        $bytes = $this->tamaño;
         
         if ($bytes >= 1073741824) {
             return number_format($bytes / 1073741824, 2) . ' GB';
@@ -50,23 +50,23 @@ class File extends Model
         }
     }
 
-    public function isImage(): bool
+    public function esImagen(): bool
     {
-        return in_array($this->mime_type, ['image/jpeg', 'image/png', 'image/webp']);
+        return in_array($this->tipo_mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
     }
 
-    public function isPdf(): bool
+    public function esPdf(): bool
     {
-        return $this->mime_type === 'application/pdf';
+        return $this->tipo_mime === 'application/pdf';
     }
 
     public function toArray(): array
     {
         $array = parent::toArray();
         $array['url'] = $this->getUrlAttribute();
-        $array['human_size'] = $this->getHumanSizeAttribute();
-        $array['is_image'] = $this->isImage();
-        $array['is_pdf'] = $this->isPdf();
+        $array['tamano_legible'] = $this->getTamanoLegibleAttribute();
+        $array['es_imagen'] = $this->esImagen();
+        $array['es_pdf'] = $this->esPdf();
         return $array;
     }
 }

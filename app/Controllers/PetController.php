@@ -22,7 +22,6 @@ class PetController
         
         $pets = Pet::where('user_id', $userId)
             ->where('is_active', true)
-            ->with(['files'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -41,7 +40,6 @@ class PetController
 
         $pet = Pet::where('id', $petId)
             ->where('user_id', $userId)
-            ->with(['files', 'medicalRecords.files'])
             ->first();
 
         if (!$pet) {
@@ -117,7 +115,7 @@ class PetController
 
             // Crear mascota
             $pet = Pet::create([
-                 'user_id' => $userId,
+                'user_id' => $userId,
                 'nombre' => trim($data['nombre']),
                 'especie' => $data['especie'],
                 'raza' => trim($data['raza']),
@@ -150,7 +148,8 @@ class PetController
     {
         $userId = $request->getAttribute('user_id');
         $petId = $args['id'];
-        $data = $request->getParsedBody();
+        $input = $request->getBody()->getContents();
+        parse_str($input, $data);
 
         $pet = Pet::where('id', $petId)->where('user_id', $userId)->first();
 
@@ -163,17 +162,17 @@ class PetController
         }
 
         try {
-           $updateData = [];
+            $updateData = [];
 
-            // Validar y procesar cada campo
-            if (isset($data['nombre'])) {
-                if (trim($data['nombre']) === '') {
+            // Validar y procesar cada campo (igual que en store, pero todos opcionales)
+            if (!empty($data['nombre'])) {
+                if (strlen(trim($data['nombre'])) === 0) {
                     throw new \Exception('El nombre no puede estar vacío');
                 }
                 $updateData['nombre'] = trim($data['nombre']);
             }
 
-            if (isset($data['especie'])) {
+            if (!empty($data['especie'])) {
                 $especiesValidas = array_keys(Pet::getEspeciesValidas());
                 if (!in_array($data['especie'], $especiesValidas)) {
                     throw new \Exception('Especie no válida. Opciones: ' . implode(', ', $especiesValidas));
@@ -181,14 +180,11 @@ class PetController
                 $updateData['especie'] = $data['especie'];
             }
 
-            if (isset($data['raza'])) {
-                if (trim($data['raza']) === '') {
-                    throw new \Exception('La raza no puede estar vacía');
-                }
+            if (!empty($data['raza'])) {
                 $updateData['raza'] = trim($data['raza']);
             }
 
-            if (isset($data['fecha_nacimiento'])) {
+            if (!empty($data['fecha_nacimiento'])) {
                 $fechaNacimiento = $this->convertirFecha($data['fecha_nacimiento']);
                 if (!$fechaNacimiento) {
                     throw new \Exception('Formato de fecha inválido. Use dd/mm/yyyy');
@@ -202,14 +198,14 @@ class PetController
                 $updateData['fecha_nacimiento'] = $fechaNacimiento->format('Y-m-d');
             }
 
-            if (isset($data['genero'])) {
+            if (!empty($data['genero'])) {
                 if (!in_array($data['genero'], Pet::getGenerosValidos())) {
                     throw new \Exception('Género no válido. Opciones: macho, hembra');
                 }
                 $updateData['genero'] = $data['genero'];
             }
 
-            if (isset($data['peso'])) {
+            if (!empty($data['peso'])) {
                 $peso = (float) $data['peso'];
                 if ($peso <= 0) {
                     throw new \Exception('El peso debe ser mayor a 0');
@@ -217,23 +213,14 @@ class PetController
                 $updateData['peso'] = $peso;
             }
 
-            if (isset($data['chip'])) {
-                $chip = trim($data['chip']);
-                $validacionChip = Pet::validarChip($chip);
-                if (!$validacionChip['valido']) {
-                    throw new \Exception('Chip inválido: ' . implode(', ', $validacionChip['errores']));
-                }
-
-                // Verificar duplicado solo si es diferente al actual
-                if ($chip !== $pet->chip && Pet::where('chip', $chip)->exists()) {
-                    throw new \Exception('Ya existe una mascota con este número de chip');
-                }
-                
-                $updateData['chip'] = $chip;
+            // Bloquear actualización de chip
+            if (isset($data['chip']) && !empty($data['chip'])) {
+                throw new \Exception('El chip no puede ser modificado una vez asignado a la mascota');
             }
 
+            // Observaciones: permitir vaciar el campo
             if (isset($data['observaciones'])) {
-                $updateData['observaciones'] = $data['observaciones'] ? trim($data['observaciones']) : null;
+                $updateData['observaciones'] = !empty($data['observaciones']) ? trim($data['observaciones']) : null;
             }
 
             // Actualizar solo si hay campos válidos

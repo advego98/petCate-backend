@@ -22,7 +22,7 @@ class AuthMiddleware
     public function __invoke(Request $request, RequestHandler $handler): Response
     {
         $authHeader = $request->getHeaderLine('Authorization');
-        
+
         if (empty($authHeader)) {
             $response = new \Slim\Psr7\Response();
             $response->getBody()->write(json_encode([
